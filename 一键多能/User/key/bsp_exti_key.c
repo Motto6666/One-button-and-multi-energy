@@ -1,4 +1,6 @@
 #include "./key/bsp_exti_key.h"
+#include "./basetime/bsp_basetime.h"
+#include "./blink_mode/bsp_blink_mode.h"
 
 static void NVIC_Config(void)
 {
@@ -56,3 +58,41 @@ void KEY_EXTI_Config(void)
 }
 
 
+
+/*
+* 以后中断服务函数最好放到对应的.c文件中，如按键的外部中断就放到按键的配置文件中：
+*	bsp_exit_key.c
+*/
+
+/*EXTI外部中断服务函数*/
+extern volatile uint32_t time;//计数时间，单位为ms，初始值为0
+extern volatile uint32_t Press_and_release;//按下松开标识符，初始值为1
+
+/*有特殊含义的数字，要使用宏定义*/
+#define		KEY_PRESS			1
+#define 	KEY_RELEASE		0	
+
+void KEY1_EXTI_IRQHandler(void)
+{
+	
+  if(EXTI_GetITStatus(KEY1_EXTI_LINE) != RESET)//按键按下后TIM6开始计数
+	{
+		switch(Press_and_release)
+		{
+			case KEY_PRESS:
+				time = 0;//time清0
+				TIM_Cmd(BASIC_TIM, ENABLE);//启动TIM6
+			  Press_and_release = !Press_and_release;//此时Press_and_release的值变为0
+			break;
+			
+			case KEY_RELEASE:
+				TIM_Cmd(BASIC_TIM, DISABLE);//关闭TIM6
+			  Press_and_release = !Press_and_release;//此时Press_and_release的值变为1
+			  blink_mode_change();//切换LED灯闪烁模式以及闪烁时间
+			break;
+			
+			default: break;
+		}
+		EXTI_ClearITPendingBit(KEY1_EXTI_LINE);
+	}
+}

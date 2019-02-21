@@ -48,3 +48,14 @@ void BASIC_TIM_Init(void)
 	BASIC_TIM_NVIC_Config();
 	BASIC_TIM_Mode_Config();
 }
+
+/*基本定时器中断服务函数*/
+extern volatile uint32_t time;//计数时间，单位为ms
+void  BASIC_TIM_IRQHandler (void) //中断服务函数。1ms中断一次
+{
+	if ( TIM_GetITStatus( BASIC_TIM, TIM_IT_Update) != RESET ) 
+	{	
+		time++;
+		TIM_ClearITPendingBit(BASIC_TIM , TIM_FLAG_Update);  		 
+	}		 	
+}

@@ -24,9 +24,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x.h"
 #include "stm32f10x_it.h"
-#include "./key/bsp_exti_key.h"
-#include "./basetime/bsp_basetime.h"
-#include "./blink_mode/bsp_blink_mode.h"
 
 /** @addtogroup STM32F10x_StdPeriph_Template
   * @{
@@ -142,55 +139,6 @@ void SysTick_Handler(void)
 
 
 
-
-/*
-* 以后中断函数最好放到对应的.c文件中，如按键的外部中断就放到按键的配置文件中：
-*	bsp_exit_key.c
-*/
-
-/*EXTI外部中断函数*/
-extern volatile uint32_t time;//计数时间，单位为ms，初始值为0
-extern volatile uint32_t Press_and_release;//按下松开标识符，初始值为1
-
-/*数字有特别含义的不要使用魔数，使用宏定义来处理*/
-#define		KEY_PRESS			1
-#define 	KEY_RELEASE		0				
-void KEY1_EXTI_IRQHandler(void)
-{
-	
-  if(EXTI_GetITStatus(KEY1_EXTI_LINE) != RESET)//按键按下后TIM6开始计数
-	{
-		switch(Press_and_release)
-		{
-			case KEY_PRESS:
-				time = 0;//time清0
-				TIM_Cmd(BASIC_TIM, ENABLE);//启动TIM6
-			  Press_and_release = !Press_and_release;//此时Press_and_release的值变为0
-			break;
-			
-			case KEY_RELEASE:
-				TIM_Cmd(BASIC_TIM, DISABLE);//关闭TIM6
-			  Press_and_release = !Press_and_release;//此时Press_and_release的值变为1
-			  blink_mode_change();//切换LED灯闪烁模式以及闪烁时间
-			break;
-			
-			default: break;
-		}
-		EXTI_ClearITPendingBit(KEY1_EXTI_LINE);
-	}
-}
-
-
-/*定时器计数函数*/
-extern volatile uint32_t time;//计数时间，单位为ms
-void  BASIC_TIM_IRQHandler (void) //中断服务函数。1ms中断一次
-{
-	if ( TIM_GetITStatus( BASIC_TIM, TIM_IT_Update) != RESET ) 
-	{	
-		time++;
-		TIM_ClearITPendingBit(BASIC_TIM , TIM_FLAG_Update);  		 
-	}		 	
-}
 
 
 
